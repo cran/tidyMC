@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="utf-8" />
+<meta name="generator" content="pandoc" />
+<meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
+
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+
+
+<title>Monte Carlo Simulations made easy and tidy with tidyMC</title>
+
+<script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
+// be compatible with the behavior of Pandoc < 2.8).
+document.addEventListener('DOMContentLoaded', function(e) {
+  var hs = document.querySelectorAll("div.section[class*='level'] > :first-child");
+  var i, h, a;
+  for (i = 0; i < hs.length; i++) {
+    h = hs[i];
+    if (!/^h[1-6]$/i.test(h.tagName)) continue;  // it should be a header h1-h6
+    a = h.attributes;
+    while (a.length > 0) h.removeAttribute(a[0].name);
+  }
+});
+</script>
+
+<style type="text/css">
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+
+
+<style type="text/css">
+code {
+white-space: pre;
+}
+.sourceCode {
+overflow: visible;
+}
+</style>
+<style type="text/css" data-origin="pandoc">
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+{ counter-reset: source-line 0; }
+pre.numberSource code > span
+{ position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+{ content: counter(source-line);
+position: relative; left: -1em; text-align: right; vertical-align: baseline;
+border: none; display: inline-block;
+-webkit-touch-callout: none; -webkit-user-select: none;
+-khtml-user-select: none; -moz-user-select: none;
+-ms-user-select: none; user-select: none;
+padding: 0 4px; width: 4em;
+color: #aaaaaa;
+}
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa; padding-left: 4px; }
+div.sourceCode
+{ }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } 
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.at { color: #7d9029; } 
+code span.bn { color: #40a070; } 
+code span.bu { color: #008000; } 
+code span.cf { color: #007020; font-weight: bold; } 
+code span.ch { color: #4070a0; } 
+code span.cn { color: #880000; } 
+code span.co { color: #60a0b0; font-style: italic; } 
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.do { color: #ba2121; font-style: italic; } 
+code span.dt { color: #902000; } 
+code span.dv { color: #40a070; } 
+code span.er { color: #ff0000; font-weight: bold; } 
+code span.ex { } 
+code span.fl { color: #40a070; } 
+code span.fu { color: #06287e; } 
+code span.im { color: #008000; font-weight: bold; } 
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } 
+code span.kw { color: #007020; font-weight: bold; } 
+code span.op { color: #666666; } 
+code span.ot { color: #007020; } 
+code span.pp { color: #bc7a00; } 
+code span.sc { color: #4070a0; } 
+code span.ss { color: #bb6688; } 
+code span.st { color: #4070a0; } 
+code span.va { color: #19177c; } 
+code span.vs { color: #4070a0; } 
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } 
+</style>
+<script>
+// apply pandoc div.sourceCode style to pre.sourceCode instead
+(function() {
+  var sheets = document.styleSheets;
+  for (var i = 0; i < sheets.length; i++) {
+    if (sheets[i].ownerNode.dataset["origin"] !== "pandoc") continue;
+    try { var rules = sheets[i].cssRules; } catch (e) { continue; }
+    var j = 0;
+    while (j < rules.length) {
+      var rule = rules[j];
+      // check if there is a div.sourceCode rule
+      if (rule.type !== rule.STYLE_RULE || rule.selectorText !== "div.sourceCode") {
+        j++;
+        continue;
+      }
+      var style = rule.style.cssText;
+      // check if color or background-color is set
+      if (rule.style.color === '' && rule.style.backgroundColor === '') {
+        j++;
+        continue;
+      }
+      // replace div.sourceCode by a pre.sourceCode rule
+      sheets[i].deleteRule(j);
+      sheets[i].insertRule('pre.sourceCode{' + style + '}', j);
+    }
+  }
+})();
+</script>
+
+
+
+
+<style type="text/css">body {
+background-color: #fff;
+margin: 1em auto;
+max-width: 700px;
+overflow: visible;
+padding-left: 2em;
+padding-right: 2em;
+font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+font-size: 14px;
+line-height: 1.35;
+}
+#TOC {
+clear: both;
+margin: 0 0 10px 10px;
+padding: 4px;
+width: 400px;
+border: 1px solid #CCCCCC;
+border-radius: 5px;
+background-color: #f6f6f6;
+font-size: 13px;
+line-height: 1.3;
+}
+#TOC .toctitle {
+font-weight: bold;
+font-size: 15px;
+margin-left: 5px;
+}
+#TOC ul {
+padding-left: 40px;
+margin-left: -1.5em;
+margin-top: 5px;
+margin-bottom: 5px;
+}
+#TOC ul ul {
+margin-left: -2em;
+}
+#TOC li {
+line-height: 16px;
+}
+table {
+margin: 1em auto;
+border-width: 1px;
+border-color: #DDDDDD;
+border-style: outset;
+border-collapse: collapse;
+}
+table th {
+border-width: 2px;
+padding: 5px;
+border-style: inset;
+}
+table td {
+border-width: 1px;
+border-style: inset;
+line-height: 18px;
+padding: 5px 5px;
+}
+table, table th, table td {
+border-left-style: none;
+border-right-style: none;
+}
+table thead, table tr.even {
+background-color: #f7f7f7;
+}
+p {
+margin: 0.5em 0;
+}
+blockquote {
+background-color: #f6f6f6;
+padding: 0.25em 0.75em;
+}
+hr {
+border-style: solid;
+border: none;
+border-top: 1px solid #777;
+margin: 28px 0;
+}
+dl {
+margin-left: 0;
+}
+dl dd {
+margin-bottom: 13px;
+margin-left: 13px;
+}
+dl dt {
+font-weight: bold;
+}
+ul {
+margin-top: 0;
+}
+ul li {
+list-style: circle outside;
+}
+ul ul {
+margin-bottom: 0;
+}
+pre, code {
+background-color: #f7f7f7;
+border-radius: 3px;
+color: #333;
+white-space: pre-wrap; 
+}
+pre {
+border-radius: 3px;
+margin: 5px 0px 10px 0px;
+padding: 10px;
+}
+pre:not([class]) {
+background-color: #f7f7f7;
+}
+code {
+font-family: Consolas, Monaco, 'Courier New', monospace;
+font-size: 85%;
+}
+p > code, li > code {
+padding: 2px 0px;
+}
+div.figure {
+text-align: center;
+}
+img {
+background-color: #FFFFFF;
+padding: 2px;
+border: 1px solid #DDDDDD;
+border-radius: 3px;
+border: 1px solid #CCCCCC;
+margin: 0 5px;
+}
+h1 {
+margin-top: 0;
+font-size: 35px;
+line-height: 40px;
+}
+h2 {
+border-bottom: 4px solid #f7f7f7;
+padding-top: 10px;
+padding-bottom: 2px;
+font-size: 145%;
+}
+h3 {
+border-bottom: 2px solid #f7f7f7;
+padding-top: 10px;
+font-size: 120%;
+}
+h4 {
+border-bottom: 1px solid #f7f7f7;
+margin-left: 8px;
+font-size: 105%;
+}
+h5, h6 {
+border-bottom: 1px solid #ccc;
+font-size: 105%;
+}
+a {
+color: #0033dd;
+text-decoration: none;
+}
+a:hover {
+color: #6666ff; }
+a:visited {
+color: #800080; }
+a:visited:hover {
+color: #BB00BB; }
+a[href^="http:"] {
+text-decoration: underline; }
+a[href^="https:"] {
+text-decoration: underline; }
+
+code > span.kw { color: #555; font-weight: bold; } 
+code > span.dt { color: #902000; } 
+code > span.dv { color: #40a070; } 
+code > span.bn { color: #d14; } 
+code > span.fl { color: #d14; } 
+code > span.ch { color: #d14; } 
+code > span.st { color: #d14; } 
+code > span.co { color: #888888; font-style: italic; } 
+code > span.ot { color: #007020; } 
+code > span.al { color: #ff0000; font-weight: bold; } 
+code > span.fu { color: #900; font-weight: bold; } 
+code > span.er { color: #a61717; background-color: #e3d2d2; } 
+</style>
+
+
+
+
+</head>
+
+<body>
+
+
+
+
+<h1 class="title toc-ignore">Monte Carlo Simulations made easy and tidy
+with tidyMC</h1>
+
+
+
+<div id="package-overview" class="section level1">
+<h1>Package overview</h1>
+<p>Monte Carlo simulations aim to study the properties of statistical
+inference techniques. At its core, a Monte Carlo simulation works
+through the application of the techniques to repeatedly drawn samples
+from a pre-specified data generating process. The <code>tidyMC</code>
+package aims to cover and simplify the whole workflow of running a Monte
+Carlo simulation in either an academic or professional setting. Thus,
+<code>tidyMC</code> aims to provide functions for the following
+tasks:</p>
+<ul>
+<li>Running a Monte Carlo simulation for a user defined function over a
+parameter grid using <code>future_mc()</code></li>
+<li>Summarizing the results by (optionally) user defined summary
+functions using <code>summary.mc()</code></li>
+<li>Creating plots of the Monte Carlo simulation results, which can be
+modified by the user using <code>plot.mc()</code> and
+<code>plot.summary.mc()</code></li>
+<li>Creating a <code>LaTeX</code> table summarizing the results of the
+Monte Carlo simulation using <code>tidy_mc_latex()</code></li>
+</ul>
+<p>In the following subsections we will show how you can implement those
+tasks using the <code>tidyMC</code> package.</p>
+<div id="installing-tidymc" class="section level2">
+<h2>Installing tidyMC</h2>
+<p>Until now, the <code>tidyMC</code> package is not on CRAN, thus you
+need to download the development version from <a href="https://github.com/stefanlinner/tidyMC">GitHub</a> as follows:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># install.packages(&quot;devtools&quot;)</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">&quot;stefanlinner/tidyMC&quot;</span>)</span></code></pre></div>
+<p>Afterwards you can load the package:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">library</span>(tidyMC)</span></code></pre></div>
+<p>Moreover, the following packages will be used in this vignette:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># install.packages(&quot;magrittr&quot;)</span></span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">library</span>(magrittr)</span>
+<span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="co"># install.packages(&quot;ggplot2&quot;)</span></span>
+<span id="cb3-4"><a href="#cb3-4" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb3-5"><a href="#cb3-5" tabindex="-1"></a><span class="co"># install.packages(&quot;kableExtra&quot;)</span></span>
+<span id="cb3-6"><a href="#cb3-6" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span></code></pre></div>
+<div id="run-your-first-monte-carlo-simulation-with-future_mc" class="section level3">
+<h3>Run your first Monte Carlo Simulation with
+<code>future_mc()</code></h3>
+<p><code>future_mc()</code> allows you to run a Monte Carlo simulation
+for a user defined function and given parameters. The first argument of
+<code>future_mc()</code> is <code>fun</code> which has to be a function
+that handles the generation of data, the application of the method of
+interest and the evaluation of the result for a single repetition and
+parameter combination. <code>future_mc()</code> handles the generation
+of loops over the desired parameter grids and the repetition of the
+Monte Carlo experiment for each of the parameter constellations.
+Consider the following example for <code>fun</code> and note that it
+performs the required tasks of generating data, applying the method and
+evaluating the results:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># fun</span></span>
+<span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a>ols_test <span class="ot">&lt;-</span> </span>
+<span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a>  <span class="cf">function</span>(b0, b1, b2, n, sigma2, param_x1, param_x2, inc_x2){</span>
+<span id="cb4-4"><a href="#cb4-4" tabindex="-1"></a>    </span>
+<span id="cb4-5"><a href="#cb4-5" tabindex="-1"></a>    <span class="co"># generation of data</span></span>
+<span id="cb4-6"><a href="#cb4-6" tabindex="-1"></a>    x1 <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="at">n =</span> n, <span class="at">mean =</span> param_x1[<span class="dv">1</span>], <span class="at">sd =</span> param_x1[<span class="dv">2</span>])</span>
+<span id="cb4-7"><a href="#cb4-7" tabindex="-1"></a>    x2 <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(<span class="at">n =</span> n,  <span class="at">mean =</span> param_x2[<span class="dv">1</span>], <span class="at">sd =</span> param_x2[<span class="dv">2</span>])</span>
+<span id="cb4-8"><a href="#cb4-8" tabindex="-1"></a>    e <span class="ot">&lt;-</span> <span class="fu">rnorm</span>(n, <span class="at">sd =</span> <span class="fu">sqrt</span>(sigma2))</span>
+<span id="cb4-9"><a href="#cb4-9" tabindex="-1"></a>    y <span class="ot">&lt;-</span> b0 <span class="sc">+</span> b1<span class="sc">*</span>x1 <span class="sc">+</span> b2<span class="sc">*</span>x2 <span class="sc">+</span> e</span>
+<span id="cb4-10"><a href="#cb4-10" tabindex="-1"></a>    </span>
+<span id="cb4-11"><a href="#cb4-11" tabindex="-1"></a>    <span class="cf">if</span> (inc_x2 <span class="sc">==</span> <span class="dv">0</span>){</span>
+<span id="cb4-12"><a href="#cb4-12" tabindex="-1"></a>      x2 <span class="ot">&lt;-</span> x2 <span class="sc">*</span> inc_x2</span>
+<span id="cb4-13"><a href="#cb4-13" tabindex="-1"></a>    }</span>
+<span id="cb4-14"><a href="#cb4-14" tabindex="-1"></a>    </span>
+<span id="cb4-15"><a href="#cb4-15" tabindex="-1"></a>    <span class="co"># application of method</span></span>
+<span id="cb4-16"><a href="#cb4-16" tabindex="-1"></a>    estim <span class="ot">&lt;-</span> <span class="fu">lm</span>(y <span class="sc">~</span> x1 <span class="sc">+</span> x2)</span>
+<span id="cb4-17"><a href="#cb4-17" tabindex="-1"></a>    </span>
+<span id="cb4-18"><a href="#cb4-18" tabindex="-1"></a>    <span class="co"># evaluation of the result for a single repetition and parameter combination</span></span>
+<span id="cb4-19"><a href="#cb4-19" tabindex="-1"></a>    out <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">b0 =</span> estim<span class="sc">$</span>coefficients[<span class="dv">1</span>],</span>
+<span id="cb4-20"><a href="#cb4-20" tabindex="-1"></a>                <span class="at">b1 =</span> estim<span class="sc">$</span>coefficients[<span class="dv">2</span>],</span>
+<span id="cb4-21"><a href="#cb4-21" tabindex="-1"></a>                <span class="at">b2 =</span> estim<span class="sc">$</span>coefficients[<span class="dv">3</span>],</span>
+<span id="cb4-22"><a href="#cb4-22" tabindex="-1"></a>                <span class="at">sigma2 =</span> <span class="fu">var</span>(estim<span class="sc">$</span>residuals))</span>
+<span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a>    <span class="fu">return</span>(out)</span>
+<span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a>  }</span></code></pre></div>
+<p>The second argument of <code>future_mc()</code> is
+<code>repetitions</code> which should be an integer specifying the
+number of Monte Carlo iterations. While the third argument
+<code>param_list</code> should be a list whose components are named
+after the parameters of <code>fun</code> which should vary for the
+different Monte Carlo Simulation and each component is a vector
+containing the desired grid values for the parameter. Consider the
+following example for <code>param_list</code> and note that its
+components are named accordingly to the parameters of
+<code>ols_test</code>: <code>n</code> and <code>inc_x2</code>,
+respectively:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># param_list</span></span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>param_list_ols <span class="ot">&lt;-</span> </span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  <span class="fu">list</span>(<span class="at">n =</span> <span class="fu">c</span>(<span class="dv">100</span>, <span class="dv">200</span>, <span class="dv">300</span>), <span class="at">inc_x2 =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">1</span>))</span></code></pre></div>
+<p><code>future_mc()</code> takes care of creating all possible
+parameter combinations of <code>param_list</code> and runs the Monte
+Carlo simulation over all of these for all possible combinations. If you
+don’t want to run a Monte Carlo simulation for every possible parameter
+combination you can alternatively define <code>param_table</code> with a
+<code>data.frame</code> or <code>data.table</code> containing the
+parameter combinations you are interested in.The <code>...</code>
+argument can be used to specify further arguments of <code>fun</code>
+which are not contained in <code>param_list</code>. Those arguments will
+be held fixed for all parameter combinations. In our OLS example those
+arguments are <code>b0</code>, <code>b1</code>, <code>b2</code>,
+<code>sigma2</code>, <code>param_x1</code>, and
+<code>param_x2</code>.</p>
+<p>Moreover, there are four formal requirements that <code>fun</code>
+and thus <code>ols_test</code> have to fulfill:</p>
+<ul>
+<li>The arguments of <code>fun</code> which are present in
+<code>param_list</code> have to be scalar values. Note that the
+arguments of <code>ols_test</code> which are contained in
+<code>param_list_ols</code>: <code>n</code> and <code>inc_x2</code> are
+scalar values. The remaining arguments of <code>ols_test</code> are
+allowed to take non-scalar values.</li>
+<li>Every variable used inside <code>fun</code> has either to be defined
+inside <code>fun</code> or given as an argument through the
+<code>...</code> argument.</li>
+<li>The value returned by <code>fun</code> has to be a named list. In
+our example the names of the returned list are <code>b0</code>,
+<code>b1</code>, <code>b2</code>, and <code>sigma2</code>.</li>
+<li>The names of the returned values and those of the arguments
+contained in <code>param_list</code> need to be different. Moreover,
+they cannot be <code>params</code>, <code>repetitions</code> or
+<code>setup</code> as these names are already occupied. Note that
+<code>b0</code>, <code>b1</code>, <code>b2</code>, and
+<code>sigma2</code> are the names of the returned values as well as
+names of arguments of <code>ols_test</code>. However, none of those
+arguments is contained in <code>param_list_ols</code>. If we would add
+either of those variables to <code>param_list_ols</code> we would need
+to change the name of the returned value for the respective
+variable.</li>
+</ul>
+<p>We recommend to even further restrict the return value of
+<code>fun</code> to be a named list of scalars. This allows you to use
+all comfort functions of the <code>tidyMC</code> package. As you can
+see, we did that for <code>ols_test</code>.</p>
+<p>The argument <code>parallelisation_plan</code> allows the user to set
+a parallelisation plan. While the argument
+<code>parallelisation_options</code> allows the user to fine tune
+functions, such as <code>furrr::future_map()</code> by
+<code>furrr::furrr_options()</code>. The argument <code>seed</code> for
+<code>furrr::furrr_options()</code> can be specified in
+<code>parallelisation_options</code> following the formal requirements
+of its respective documentation. Moreover, the user can also decide not
+to run the Monte Carlo in parallel by setting
+<code>parallel = FALSE</code>. To construct
+<code>parallelisation_plan</code> the user needs to provide a list named
+after the arguments of <code>future::plan</code>. The main argument
+<code>strategy</code> needs to provide the specific type of
+parallelisation the user would like to use and the number of cores which
+are used in the function. Some of the options for strategy are:
+<code>multisession</code>, <code>multicore</code> and
+<code>cluster</code>. We strongly recommend the user to read the
+documentation of the <code>future</code> package for a more detailed
+instruction of how to set up the different strategies.</p>
+<p>As a default (<code>check = TRUE</code>) <code>future_mc()</code>
+runs a quick check by running a single test-iteration for each parameter
+combination in order to check for possible errors in <code>fun</code>.
+If a error occurs the user not only receives the error message but also
+the parameter combinations for which the error occurred:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">101</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a>first_mc_ols <span class="ot">&lt;-</span> <span class="fu">future_mc</span>(</span>
+<span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a>  <span class="at">fun =</span> ols_test, </span>
+<span id="cb6-4"><a href="#cb6-4" tabindex="-1"></a>  <span class="at">repetitions =</span> <span class="dv">1000</span>, </span>
+<span id="cb6-5"><a href="#cb6-5" tabindex="-1"></a>  <span class="at">param_list =</span> param_list_ols, </span>
+<span id="cb6-6"><a href="#cb6-6" tabindex="-1"></a>  <span class="at">b0 =</span> <span class="dv">1</span>, </span>
+<span id="cb6-7"><a href="#cb6-7" tabindex="-1"></a>  <span class="at">b1 =</span> <span class="dv">4</span>, </span>
+<span id="cb6-8"><a href="#cb6-8" tabindex="-1"></a>  <span class="at">b2 =</span> <span class="dv">5</span>, </span>
+<span id="cb6-9"><a href="#cb6-9" tabindex="-1"></a>  <span class="at">sigma2 =</span> <span class="sc">-</span><span class="dv">2</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" tabindex="-1"></a>  <span class="at">param_x1 =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">5</span>),</span>
+<span id="cb6-11"><a href="#cb6-11" tabindex="-1"></a>  <span class="at">param_x2 =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">6</span>),</span>
+<span id="cb6-12"><a href="#cb6-12" tabindex="-1"></a>  <span class="at">check =</span> <span class="cn">TRUE</span></span>
+<span id="cb6-13"><a href="#cb6-13" tabindex="-1"></a>)</span>
+<span id="cb6-14"><a href="#cb6-14" tabindex="-1"></a><span class="co">#&gt; Running single test-iteration for each parameter combination...</span></span>
+<span id="cb6-15"><a href="#cb6-15" tabindex="-1"></a><span class="co">#&gt; Error in future_mc(fun = ols_test, repetitions = 1000, param_list = param_list_ols, :  </span></span>
+<span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a><span class="co">#&gt;  Function error: NaNs wurden erzeugt </span></span>
+<span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co">#&gt;  At the parameters: n=100, inc_x2=0 </span></span>
+<span id="cb6-18"><a href="#cb6-18" tabindex="-1"></a><span class="co">#&gt;   </span></span>
+<span id="cb6-19"><a href="#cb6-19" tabindex="-1"></a><span class="co">#&gt;  Function error: NaNs wurden erzeugt </span></span>
+<span id="cb6-20"><a href="#cb6-20" tabindex="-1"></a><span class="co">#&gt;  At the parameters: n=200, inc_x2=0 </span></span>
+<span id="cb6-21"><a href="#cb6-21" tabindex="-1"></a><span class="co">#&gt;   </span></span>
+<span id="cb6-22"><a href="#cb6-22" tabindex="-1"></a><span class="co">#&gt;  Function error: NaNs wurden erzeugt </span></span>
+<span id="cb6-23"><a href="#cb6-23" tabindex="-1"></a><span class="co">#&gt;  At the parameters: n=300, inc_x2=0 </span></span>
+<span id="cb6-24"><a href="#cb6-24" tabindex="-1"></a><span class="co">#&gt;   </span></span>
+<span id="cb6-25"><a href="#cb6-25" tabindex="-1"></a><span class="co">#&gt;  Function error: NaNs wurden erzeugt </span></span>
+<span id="cb6-26"><a href="#cb6-26" tabindex="-1"></a><span class="co">#&gt;  At the parameters: n=100, inc_x2=1 </span></span>
+<span id="cb6-27"><a href="#cb6-27" tabindex="-1"></a><span class="co">#&gt;   </span></span>
+<span id="cb6-28"><a href="#cb6-28" tabindex="-1"></a><span class="co">#&gt;  Function error: NaNs wurden erzeugt </span></span>
+<span id="cb6-29"><a href="#cb6-29" tabindex="-1"></a><span class="co">#&gt;  At the parameters: n=200, inc_x2=1 </span></span>
+<span id="cb6-30"><a href="#cb6-30" tabindex="-1"></a><span class="co">#&gt;   </span></span>
+<span id="cb6-31"><a href="#cb6-31" tabindex="-1"></a><span class="co">#&gt;  Function error: NaNs wurden erzeugt </span></span>
+<span id="cb6-32"><a href="#cb6-32" tabindex="-1"></a><span class="co">#&gt;  At the parameters: n=300, inc_x2=1 </span></span>
+<span id="cb6-33"><a href="#cb6-33" tabindex="-1"></a><span class="co">#&gt; </span></span></code></pre></div>
+<p>The attentive reader might already have noticed that we specified
+<code>sigma2 = -2</code> which doesn’t make sense, as the variance of
+the error term cannot be negative. This results in a failed check for
+all parameter combinations, as this parameter is held fixed for any
+combination. Once we correct that mistake, we can run our first Monte
+Carlo simulation:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">101</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a>first_mc_ols <span class="ot">&lt;-</span> <span class="fu">future_mc</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a>  <span class="at">fun =</span> ols_test, </span>
+<span id="cb7-4"><a href="#cb7-4" tabindex="-1"></a>  <span class="at">repetitions =</span> <span class="dv">1000</span>, </span>
+<span id="cb7-5"><a href="#cb7-5" tabindex="-1"></a>  <span class="at">param_list =</span> param_list_ols, </span>
+<span id="cb7-6"><a href="#cb7-6" tabindex="-1"></a>  <span class="at">b0 =</span> <span class="dv">1</span>, </span>
+<span id="cb7-7"><a href="#cb7-7" tabindex="-1"></a>  <span class="at">b1 =</span> <span class="dv">4</span>, </span>
+<span id="cb7-8"><a href="#cb7-8" tabindex="-1"></a>  <span class="at">b2 =</span> <span class="dv">5</span>, </span>
+<span id="cb7-9"><a href="#cb7-9" tabindex="-1"></a>  <span class="at">sigma2 =</span> <span class="dv">2</span>, <span class="co"># correctly specify sigma2</span></span>
+<span id="cb7-10"><a href="#cb7-10" tabindex="-1"></a>  <span class="at">param_x1 =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">5</span>),</span>
+<span id="cb7-11"><a href="#cb7-11" tabindex="-1"></a>  <span class="at">param_x2 =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">6</span>),</span>
+<span id="cb7-12"><a href="#cb7-12" tabindex="-1"></a>  <span class="at">check =</span> <span class="cn">TRUE</span></span>
+<span id="cb7-13"><a href="#cb7-13" tabindex="-1"></a>)</span>
+<span id="cb7-14"><a href="#cb7-14" tabindex="-1"></a><span class="co">#&gt; Running single test-iteration for each parameter combination...</span></span>
+<span id="cb7-15"><a href="#cb7-15" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-16"><a href="#cb7-16" tabindex="-1"></a><span class="co">#&gt;  Test-run successfull: No errors occurred!</span></span>
+<span id="cb7-17"><a href="#cb7-17" tabindex="-1"></a><span class="co">#&gt; Running whole simulation: Overall 6 parameter combinations are simulated ...</span></span>
+<span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a><span class="co">#&gt;  Simulation was successfull!</span></span>
+<span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="co">#&gt;  Running time: 00:00:04.335539</span></span></code></pre></div>
+<p><code>future_mc</code> returns a list of type <code>mc</code> and
+length 11 consisting of a tibble (<code>first_mc_ols$output</code>)
+containing the return value of <code>fun</code> for each iteration and
+parameter combination. In our case <code>first_mc_ols$output</code>
+contains a column for each output <code>b0</code>, <code>b1</code>,
+<code>b2</code>, and <code>sigma2</code>, as well as a column for each
+parameter in <code>param_list_ols</code> and a column containing the
+<code>nice_names</code> of the parameter combinations. Overall the
+<code>first_mc_ols$output</code> consists of 6000 rows, i.e., for each
+parameter combination 1.000 rows:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a>first_mc_ols<span class="sc">$</span>output</span>
+<span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6,000 × 7</span></span>
+<span id="cb8-3"><a href="#cb8-3" tabindex="-1"></a><span class="co">#&gt;    params              n inc_x2     b0    b1    b2 sigma2</span></span>
+<span id="cb8-4"><a href="#cb8-4" tabindex="-1"></a><span class="co">#&gt;    &lt;chr&gt;           &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;</span></span>
+<span id="cb8-5"><a href="#cb8-5" tabindex="-1"></a><span class="co">#&gt;  1 n=100, inc_x2=0   100      0  1.28   3.38    NA   776.</span></span>
+<span id="cb8-6"><a href="#cb8-6" tabindex="-1"></a><span class="co">#&gt;  2 n=100, inc_x2=0   100      0 -4.27   3.89    NA   773.</span></span>
+<span id="cb8-7"><a href="#cb8-7" tabindex="-1"></a><span class="co">#&gt;  3 n=100, inc_x2=0   100      0  5.85   4.36    NA  1130.</span></span>
+<span id="cb8-8"><a href="#cb8-8" tabindex="-1"></a><span class="co">#&gt;  4 n=100, inc_x2=0   100      0  1.57   4.69    NA  1067.</span></span>
+<span id="cb8-9"><a href="#cb8-9" tabindex="-1"></a><span class="co">#&gt;  5 n=100, inc_x2=0   100      0 -0.802  3.93    NA   873.</span></span>
+<span id="cb8-10"><a href="#cb8-10" tabindex="-1"></a><span class="co">#&gt;  6 n=100, inc_x2=0   100      0  1.26   4.44    NA   880.</span></span>
+<span id="cb8-11"><a href="#cb8-11" tabindex="-1"></a><span class="co">#&gt;  7 n=100, inc_x2=0   100      0  5.01   4.22    NA   852.</span></span>
+<span id="cb8-12"><a href="#cb8-12" tabindex="-1"></a><span class="co">#&gt;  8 n=100, inc_x2=0   100      0 -1.49   3.99    NA   938.</span></span>
+<span id="cb8-13"><a href="#cb8-13" tabindex="-1"></a><span class="co">#&gt;  9 n=100, inc_x2=0   100      0  3.07   3.80    NA   779.</span></span>
+<span id="cb8-14"><a href="#cb8-14" tabindex="-1"></a><span class="co">#&gt; 10 n=100, inc_x2=0   100      0  2.06   3.73    NA   999.</span></span>
+<span id="cb8-15"><a href="#cb8-15" tabindex="-1"></a><span class="co">#&gt; # ℹ 5,990 more rows</span></span></code></pre></div>
+<p>If <code>ols_test</code> would not return a named list of scalars,
+but a named list of non-scalars, then <code>first_mc_ols$output</code>
+would not contain a column for each output, but a single column
+containing the named list of non-scalars for each iteration and
+parameter combination.</p>
+<p>Moreover, <code>first_mc_ols</code> returns much other information
+about the Monte Carlo simulation that can be printed in a dense
+representation:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a>first_mc_ols</span>
+<span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="co">#&gt; Monte Carlo simulation results for the specified function: </span></span>
+<span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb9-4"><a href="#cb9-4" tabindex="-1"></a><span class="co">#&gt;  function (b0, b1, b2, n, sigma2, param_x1, param_x2, inc_x2) </span></span>
+<span id="cb9-5"><a href="#cb9-5" tabindex="-1"></a><span class="co">#&gt; {</span></span>
+<span id="cb9-6"><a href="#cb9-6" tabindex="-1"></a><span class="co">#&gt;     x1 &lt;- rnorm(n = n, mean = param_x1[1], sd = param_x1[2])</span></span>
+<span id="cb9-7"><a href="#cb9-7" tabindex="-1"></a><span class="co">#&gt;     x2 &lt;- rnorm(n = n, mean = param_x2[1], sd = param_x2[2])</span></span>
+<span id="cb9-8"><a href="#cb9-8" tabindex="-1"></a><span class="co">#&gt;     e &lt;- rnorm(n, sd = sqrt(sigma2))</span></span>
+<span id="cb9-9"><a href="#cb9-9" tabindex="-1"></a><span class="co">#&gt;     y &lt;- b0 + b1 * x1 + b2 * x2 + e</span></span>
+<span id="cb9-10"><a href="#cb9-10" tabindex="-1"></a><span class="co">#&gt;     if (inc_x2 == 0) {</span></span>
+<span id="cb9-11"><a href="#cb9-11" tabindex="-1"></a><span class="co">#&gt;         x2 &lt;- x2 * inc_x2</span></span>
+<span id="cb9-12"><a href="#cb9-12" tabindex="-1"></a><span class="co">#&gt;     }</span></span>
+<span id="cb9-13"><a href="#cb9-13" tabindex="-1"></a><span class="co">#&gt;     estim &lt;- lm(y ~ x1 + x2)</span></span>
+<span id="cb9-14"><a href="#cb9-14" tabindex="-1"></a><span class="co">#&gt;     out &lt;- list(b0 = estim$coefficients[1], b1 = estim$coefficients[2], </span></span>
+<span id="cb9-15"><a href="#cb9-15" tabindex="-1"></a><span class="co">#&gt;         b2 = estim$coefficients[3], sigma2 = var(estim$residuals))</span></span>
+<span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a><span class="co">#&gt;     return(out)</span></span>
+<span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co">#&gt; } </span></span>
+<span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb9-19"><a href="#cb9-19" tabindex="-1"></a><span class="co">#&gt;  The following 6 parameter combinations: </span></span>
+<span id="cb9-20"><a href="#cb9-20" tabindex="-1"></a><span class="co">#&gt; # A tibble: 6 × 2</span></span>
+<span id="cb9-21"><a href="#cb9-21" tabindex="-1"></a><span class="co">#&gt;       n inc_x2</span></span>
+<span id="cb9-22"><a href="#cb9-22" tabindex="-1"></a><span class="co">#&gt;   &lt;dbl&gt;  &lt;dbl&gt;</span></span>
+<span id="cb9-23"><a href="#cb9-23" tabindex="-1"></a><span class="co">#&gt; 1   100      0</span></span>
+<span id="cb9-24"><a href="#cb9-24" tabindex="-1"></a><span class="co">#&gt; 2   200      0</span></span>
+<span id="cb9-25"><a href="#cb9-25" tabindex="-1"></a><span class="co">#&gt; 3   300      0</span></span>
+<span id="cb9-26"><a href="#cb9-26" tabindex="-1"></a><span class="co">#&gt; 4   100      1</span></span>
+<span id="cb9-27"><a href="#cb9-27" tabindex="-1"></a><span class="co">#&gt; 5   200      1</span></span>
+<span id="cb9-28"><a href="#cb9-28" tabindex="-1"></a><span class="co">#&gt; 6   300      1</span></span>
+<span id="cb9-29"><a href="#cb9-29" tabindex="-1"></a><span class="co">#&gt; are each simulated 1000 times. </span></span>
+<span id="cb9-30"><a href="#cb9-30" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb9-31"><a href="#cb9-31" tabindex="-1"></a><span class="co">#&gt;  The Running time was: 00:00:04.335539 </span></span>
+<span id="cb9-32"><a href="#cb9-32" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb9-33"><a href="#cb9-33" tabindex="-1"></a><span class="co">#&gt;  Parallel: TRUE </span></span>
+<span id="cb9-34"><a href="#cb9-34" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb9-35"><a href="#cb9-35" tabindex="-1"></a><span class="co">#&gt;  The following parallelisation plan was used: </span></span>
+<span id="cb9-36"><a href="#cb9-36" tabindex="-1"></a><span class="co">#&gt; $strategy</span></span>
+<span id="cb9-37"><a href="#cb9-37" tabindex="-1"></a><span class="co">#&gt; multisession:</span></span>
+<span id="cb9-38"><a href="#cb9-38" tabindex="-1"></a><span class="co">#&gt; - args: function (..., workers = availableCores(), lazy = FALSE, rscript_libs = .libPaths(), envir = parent.frame())</span></span>
+<span id="cb9-39"><a href="#cb9-39" tabindex="-1"></a><span class="co">#&gt; - tweaked: FALSE</span></span>
+<span id="cb9-40"><a href="#cb9-40" tabindex="-1"></a><span class="co">#&gt; - call: NULL</span></span>
+<span id="cb9-41"><a href="#cb9-41" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-42"><a href="#cb9-42" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb9-43"><a href="#cb9-43" tabindex="-1"></a><span class="co">#&gt;  Seed: TRUE</span></span></code></pre></div>
+</div>
+<div id="summarize-your-results-with-summary.mc" class="section level3">
+<h3>Summarize your results with <code>summary.mc()</code></h3>
+<p>If <code>fun</code> returns a named list of scalars the user can use
+<code>summary.mc()</code> to summarize all Monte Carlo results. The
+first argument of the function is an object of class <code>mc</code>
+returned by <code>future_mc()</code>. The next argument
+<code>sum_funs</code> determines which summarizing functions will be
+used on the simulation results. The functions can be provided for any
+combination of: parameter combinations resulting from
+<code>param_list</code>, and the outputs of <code>fun</code>. Every
+specified function can only take one argument, which is the vector (with
+length <code>repetitions</code>) for every output. We will present all
+customization options of <code>sum_funs</code> in a stepwise manner.</p>
+<p>The first option of summarizing the results is given by just
+providing the <code>mc</code> object to <code>summary.mc</code>. In this
+case, <code>mean()</code> will be applied to all numeric values and
+<code>summary()</code> to all non-numeric data types. When the
+summarizing functions return one numeric value (like
+<code>mean()</code>) the results are twofold:</p>
+<ul>
+<li><p>First, a single scalar result of the function evaluated using the
+complete output vector is returned in the first element.</p></li>
+<li><p>Second, a vector with length <code>repetitions</code> of numeric
+results from the stepwise calculation of the function’s result across
+the output’s vector. We call this resulting vector as the “path” of the
+summarizing function.</p></li>
+</ul>
+<p>Additionally, to save computation time the parameter
+<code>which_path</code> is available to the user who wants to specify
+for which outputs the “path” should be calculated. The user needs to
+provide a character vector with the output names’. Moreover, the options
+<code>&quot;all&quot;</code> (the default) and <code>&quot;none&quot;</code> are also
+available.</p>
+<p>For the OLS example since all outputs of <code>ols_test</code> are
+numeric, the returned object will be a named nested list composed of
+four elements named after the <code>nice_names</code> returned by
+<code>future_mc()</code>. Each of this elements are itself lists
+containing the summarized outputs, i.e. <code>b0</code>,
+<code>b1</code>, <code>b2</code>, and <code>sigma2</code>. Lastly each
+of these are composed by the “path” and scalar result of
+<code>mean()</code>.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="co"># Default</span></span>
+<span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a>summary_default <span class="ot">&lt;-</span> <span class="fu">summary</span>(first_mc_ols)</span>
+<span id="cb10-3"><a href="#cb10-3" tabindex="-1"></a>summary_default</span>
+<span id="cb10-4"><a href="#cb10-4" tabindex="-1"></a><span class="co">#&gt; Results for the output b0: </span></span>
+<span id="cb10-5"><a href="#cb10-5" tabindex="-1"></a><span class="co">#&gt;    n=100, inc_x2=0: 0.9185223 </span></span>
+<span id="cb10-6"><a href="#cb10-6" tabindex="-1"></a><span class="co">#&gt;    n=100, inc_x2=1: 1.003477 </span></span>
+<span id="cb10-7"><a href="#cb10-7" tabindex="-1"></a><span class="co">#&gt;    n=200, inc_x2=0: 1.02396 </span></span>
+<span id="cb10-8"><a href="#cb10-8" tabindex="-1"></a><span class="co">#&gt;    n=200, inc_x2=1: 1.002091 </span></span>
+<span id="cb10-9"><a href="#cb10-9" tabindex="-1"></a><span class="co">#&gt;    n=300, inc_x2=0: 1.000223 </span></span>
+<span id="cb10-10"><a href="#cb10-10" tabindex="-1"></a><span class="co">#&gt;    n=300, inc_x2=1: 1.002196 </span></span>
+<span id="cb10-11"><a href="#cb10-11" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb10-12"><a href="#cb10-12" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb10-13"><a href="#cb10-13" tabindex="-1"></a><span class="co">#&gt; Results for the output b1: </span></span>
+<span id="cb10-14"><a href="#cb10-14" tabindex="-1"></a><span class="co">#&gt;    n=100, inc_x2=0: 3.985091 </span></span>
+<span id="cb10-15"><a href="#cb10-15" tabindex="-1"></a><span class="co">#&gt;    n=100, inc_x2=1: 4.000044 </span></span>
+<span id="cb10-16"><a href="#cb10-16" tabindex="-1"></a><span class="co">#&gt;    n=200, inc_x2=0: 4.005565 </span></span>
+<span id="cb10-17"><a href="#cb10-17" tabindex="-1"></a><span class="co">#&gt;    n=200, inc_x2=1: 4.000216 </span></span>
+<span id="cb10-18"><a href="#cb10-18" tabindex="-1"></a><span class="co">#&gt;    n=300, inc_x2=0: 4.001195 </span></span>
+<span id="cb10-19"><a href="#cb10-19" tabindex="-1"></a><span class="co">#&gt;    n=300, inc_x2=1: 4.000031 </span></span>
+<span id="cb10-20"><a href="#cb10-20" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb10-21"><a href="#cb10-21" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb10-22"><a href="#cb10-22" tabindex="-1"></a><span class="co">#&gt; Results for the output b2: </span></span>
+<span id="cb10-23"><a href="#cb10-23" tabindex="-1"></a><span class="co">#&gt;    n=100, inc_x2=0: </span></span>
+<span id="cb10-24"><a href="#cb10-24" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span>
+<span id="cb10-25"><a href="#cb10-25" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-26"><a href="#cb10-26" tabindex="-1"></a><span class="co">#&gt;    n=100, inc_x2=1: 5.001864 </span></span>
+<span id="cb10-27"><a href="#cb10-27" tabindex="-1"></a><span class="co">#&gt;    n=200, inc_x2=0: </span></span>
+<span id="cb10-28"><a href="#cb10-28" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span>
+<span id="cb10-29"><a href="#cb10-29" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-30"><a href="#cb10-30" tabindex="-1"></a><span class="co">#&gt;    n=200, inc_x2=1: 5.001091 </span></span>
+<span id="cb10-31"><a href="#cb10-31" tabindex="-1"></a><span class="co">#&gt;    n=300, inc_x2=0: </span></span>
+<span id="cb10-32"><a href="#cb10-32" tabindex="-1"></a><span class="co">#&gt; [1] NA</span></span>
+<span id="cb10-33"><a href="#cb10-33" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-34"><a href="#cb10-34" tabindex="-1"></a><span class="co">#&gt;    n=300, inc_x2=1: 5.000132 </span></span>
+<span id="cb10-35"><a href="#cb10-35" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb10-36"><a href="#cb10-36" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb10-37"><a href="#cb10-37" tabindex="-1"></a><span class="co">#&gt; Results for the output sigma2: </span></span>
+<span id="cb10-38"><a href="#cb10-38" tabindex="-1"></a><span class="co">#&gt;    n=100, inc_x2=0: 892.7561 </span></span>
+<span id="cb10-39"><a href="#cb10-39" tabindex="-1"></a><span class="co">#&gt;    n=100, inc_x2=1: 1.958776 </span></span>
+<span id="cb10-40"><a href="#cb10-40" tabindex="-1"></a><span class="co">#&gt;    n=200, inc_x2=0: 895.652 </span></span>
+<span id="cb10-41"><a href="#cb10-41" tabindex="-1"></a><span class="co">#&gt;    n=200, inc_x2=1: 1.982949 </span></span>
+<span id="cb10-42"><a href="#cb10-42" tabindex="-1"></a><span class="co">#&gt;    n=300, inc_x2=0: 900.6887 </span></span>
+<span id="cb10-43"><a href="#cb10-43" tabindex="-1"></a><span class="co">#&gt;    n=300, inc_x2=1: 1.983788 </span></span>
+<span id="cb10-44"><a href="#cb10-44" tabindex="-1"></a><span class="co">#&gt;  </span></span>
+<span id="cb10-45"><a href="#cb10-45" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb10-46"><a href="#cb10-46" tabindex="-1"></a><span class="fu">str</span>(summary_default[[<span class="dv">1</span>]])</span>
+<span id="cb10-47"><a href="#cb10-47" tabindex="-1"></a><span class="co">#&gt; List of 4</span></span>
+<span id="cb10-48"><a href="#cb10-48" tabindex="-1"></a><span class="co">#&gt;  $ b0    :List of 2</span></span>
+<span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="co">#&gt;   ..$ mean          : num 0.919</span></span>
+<span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a><span class="co">#&gt;   ..$ mean_over_reps: num [1:1000] 1.278 -1.497 0.954 1.108 0.726 ...</span></span>
+<span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a><span class="co">#&gt;  $ b1    :List of 2</span></span>
+<span id="cb10-52"><a href="#cb10-52" tabindex="-1"></a><span class="co">#&gt;   ..$ mean          : num 3.99</span></span>
+<span id="cb10-53"><a href="#cb10-53" tabindex="-1"></a><span class="co">#&gt;   ..$ mean_over_reps: num [1:1000] 3.38 3.63 3.88 4.08 4.05 ...</span></span>
+<span id="cb10-54"><a href="#cb10-54" tabindex="-1"></a><span class="co">#&gt;  $ b2    :List of 1</span></span>
+<span id="cb10-55"><a href="#cb10-55" tabindex="-1"></a><span class="co">#&gt;   ..$ mean: num NA</span></span>
+<span id="cb10-56"><a href="#cb10-56" tabindex="-1"></a><span class="co">#&gt;  $ sigma2:List of 2</span></span>
+<span id="cb10-57"><a href="#cb10-57" tabindex="-1"></a><span class="co">#&gt;   ..$ mean          : num 893</span></span>
+<span id="cb10-58"><a href="#cb10-58" tabindex="-1"></a><span class="co">#&gt;   ..$ mean_over_reps: num [1:1000] 776 774 893 936 923 ...</span></span></code></pre></div>
+<p>This nested list structure should give an idea of the reach and
+flexibility the <code>sum_funs</code> argument is allowed to have, since
+the user can specify a function for each element in this list.</p>
+<p>For an intermediate level of customization, the user can provide a
+combination of summarizing functions for every output, which will be
+used for all parameter combination. In the case of the OLS example, if
+we want to apply <code>mean()</code> on all estimated coefficients, but
+we want to use <code>var()</code> on the MC results of
+<code>sigma2</code>, the <code>sum_funs</code> should have the following
+structure:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="co"># summarizing output for each parameter combination with one combination</span></span>
+<span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a>sum_funs_ols <span class="ot">&lt;-</span> <span class="fu">list</span>(<span class="at">b0 =</span> mean, <span class="at">b1 =</span> mean , <span class="at">b2 =</span> mean, <span class="at">sigma2 =</span> var)</span></code></pre></div>
+<p>Moreover, the user can specify any function provided it takes the
+output vector as only available argument.</p>
+<p>Lastly for the last level of customization, a nested list named after
+the <code>nice_names</code> where every element follows the structure of
+the last example (components named after the outputs and each component
+is a function) can be specified. We present an example for this:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a>quantile_sum <span class="ot">&lt;-</span> <span class="cf">function</span>(x) <span class="fu">quantile</span>(x, <span class="at">probs =</span> <span class="fl">0.75</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a><span class="co"># summarizing output differently for different parameter combinations</span></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>sum_funs2 <span class="ot">&lt;-</span></span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a>  <span class="fu">list</span>(</span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">b0 =</span> quantile_sum, <span class="at">b1 =</span> min, <span class="at">b2 =</span> min, <span class="at">sigma2 =</span> mean),</span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">b0 =</span> mean, <span class="at">b1 =</span> quantile_sum, <span class="at">b2 =</span> mean, <span class="at">sigma2 =</span> mean),</span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">b0 =</span> median, <span class="at">b1 =</span> median, <span class="at">b2 =</span> median, <span class="at">sigma2 =</span> mean),</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">b0 =</span> max, <span class="at">b1 =</span> max, <span class="at">b2 =</span> max, <span class="at">sigma2 =</span> mean),</span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">b0 =</span> min, <span class="at">b1 =</span> min, <span class="at">b2 =</span> min, <span class="at">sigma2 =</span> quantile_sum),</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a>    <span class="fu">list</span>(<span class="at">b0 =</span> mean, <span class="at">b1 =</span> mean, <span class="at">b2 =</span> quantile_sum, <span class="at">sigma2 =</span> quantile_sum)</span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a>  )</span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a><span class="fu">names</span>(sum_funs2) <span class="ot">&lt;-</span> first_mc_ols<span class="sc">$</span>nice_names</span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a>summary_out_param_spec <span class="ot">&lt;-</span> <span class="fu">summary</span>(first_mc_ols, <span class="at">sum_funs =</span> sum_funs2)</span></code></pre></div>
+<p>We would like to reiterate that the provided summary functions are
+not restricted regarding the complexity of their return value. However,
+the path of the summarized output over all simulation repetitions is
+only returned if the provided summary functions return a single numeric
+value. Thus, the following comfort functions
+<code>plot.summary.mc()</code> and <code>tidy_mc_latex()</code> will
+only work in this specific case.</p>
+</div>
+<div id="plot-your-monte-carlo-simulation-with-plot.mc-and-plot.summary.mc" class="section level3">
+<h3>Plot your Monte Carlo Simulation with <code>plot.mc()</code> and
+<code>plot.summary.mc()</code></h3>
+<p>If <code>fun</code> returns a named list of scalars the user can use
+<code>plot.mc()</code> to generate a list of objects of class
+<code>gg</code> and <code>ggplot2</code> for all Monte Carlo results.
+The first argument of the function is an object of class <code>mc</code>
+returned by <code>future_mc()</code>. Using the argument
+<code>plot</code> the user can indicate whether the generated plots
+should be printed immediately or only returned as a list. The list will
+contain one plot for each output of <code>fun</code> comparing the
+results of the different simulation setups. In general,
+<code>plot.mc()</code> generates density plots for numeric outputs and
+bar plots for non-numeric outputs. In our example a plot for
+<code>b0</code>, <code>b1</code>, <code>b2</code>, and
+<code>sigma2</code> will be returned in a list of length four and as
+<code>b0</code>, <code>b1</code>, <code>b2</code>, and
+<code>sigma2</code> are all numeric outputs <code>plot.mc()</code> will
+return density plots for each of those:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a>mc_ols_plot <span class="ot">&lt;-</span> <span class="fu">plot</span>(first_mc_ols, <span class="at">plot =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb13-2"><a href="#cb13-2" tabindex="-1"></a><span class="fu">names</span>(mc_ols_plot)</span>
+<span id="cb13-3"><a href="#cb13-3" tabindex="-1"></a><span class="co">#&gt; [1] &quot;b0&quot;     &quot;b1&quot;     &quot;b2&quot;     &quot;sigma2&quot;</span></span></code></pre></div>
+<p>As the single list elements are of class <code>gg</code> and
+<code>ggplot2</code>, we can easily customize and extend the single
+plots using familiar <code>ggplot2</code> commands:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a>mc_ols_plot<span class="sc">$</span>b1 <span class="sc">+</span> </span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">4</span>, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>) <span class="sc">+</span> </span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">theme_minimal</span>()</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>When creating the plots the user can also subset the setups which
+he/she would like to see in the plots using the
+<code>first_mc_ols$nice_names</code> in the function argument
+<code>which_setup</code>, or a named list in
+<code>parameter_comb</code>. The single components of the list have to
+be named after the parameters specified in <code>param_list</code> and
+contain vectors specifying the values of the parameters to filter by. In
+the ols example we can filter by the parameters <code>n</code> and
+<code>inc_x2</code>:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="co"># subsetting by nice_names</span></span>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a>mc_ols_plot_subset1 <span class="ot">&lt;-</span> </span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a>  <span class="fu">plot</span>(first_mc_ols, <span class="at">plot =</span> <span class="cn">FALSE</span>, <span class="at">which_setup =</span> first_mc_ols<span class="sc">$</span>nice_names[<span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>])</span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="co">#subsetting by parameter values</span></span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a>mc_ols_plot_subset2 <span class="ot">&lt;-</span> </span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a>  <span class="fu">plot</span>(first_mc_ols, <span class="at">plot =</span> <span class="cn">FALSE</span>, <span class="at">parameter_comb =</span> <span class="fu">list</span>(<span class="at">inc_x2 =</span> <span class="dv">1</span>))</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a></span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a>mc_ols_plot_subset1<span class="sc">$</span>sigma2</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>Thus, if the user wants distinct plots for every parameter
+combination, one needs to subset the plot for any single setup in
+<code>first_mc_ols$nice_names</code>.</p>
+<p>Finally, you can also plot the simulation results for several
+parameter combination in one single plot by specifying the argument
+<code>join</code> with the respective
+<code>first_mc_ols$nice_names</code>:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a>mc_ols_plot_joint <span class="ot">&lt;-</span> <span class="fu">plot</span>(first_mc_ols, <span class="at">plot =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a>                          <span class="at">join =</span> first_mc_ols<span class="sc">$</span>nice_names)</span>
+<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a>mc_ols_plot_joint<span class="sc">$</span>b2</span>
+<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="co">#&gt; Warning: Removed 3000 rows containing non-finite values (`stat_density()`).</span></span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<p>Please be aware that the only one of the three arguments
+<code>which_setup</code>, <code>parameter_comb</code>, and
+<code>join</code> can be specified at the same time.</p>
+<p>If the provided summary functions in <code>summary.mc()</code> return
+a single numeric value and thus a path of the summarized output over all
+simulation repetitions is returned, the user can use
+<code>plot.summary.mc()</code> to plot those paths. The first argument
+of the function is an object of class <code>summary.mc</code> returned
+by <code>summary.mc()</code>. Just as <code>plot.mc()</code>,
+<code>plot.summary.mc()</code> returns a list of objects of class
+<code>gg</code> and <code>ggplot2</code>. The list will contain one line
+plot for each output of <code>fun</code> displaying the paths of the
+results of the different simulation setups. The arguments
+<code>plot</code>, <code>which_setup</code>,
+<code>parameter_comb</code>, and <code>join</code> can be specified the
+same way as for <code>plot.mc</code>:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" tabindex="-1"></a>sum_mc_plot <span class="ot">&lt;-</span> <span class="fu">plot</span>(summary_default, <span class="at">plot =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb17-2"><a href="#cb17-2" tabindex="-1"></a>sum_mc_plot<span class="sc">$</span>b1 <span class="sc">+</span> </span>
+<span id="cb17-3"><a href="#cb17-3" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="dv">100</span>, <span class="at">col =</span> <span class="st">&quot;red&quot;</span>) <span class="sc">+</span></span>
+<span id="cb17-4"><a href="#cb17-4" tabindex="-1"></a>  ggplot2<span class="sc">::</span><span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>, </span>
+<span id="cb17-5"><a href="#cb17-5" tabindex="-1"></a>                                            <span class="at">hjust =</span> <span class="fl">0.1</span>, </span>
+<span id="cb17-6"><a href="#cb17-6" tabindex="-1"></a>                                            <span class="at">vjust =</span> <span class="fl">0.2</span>))</span></code></pre></div>
+<p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAqAAAAHgCAMAAABNUi8GAAABPlBMVEUAAAAAADoAAGYAOpAAZrYZGT8ZGWIZP4EZYp8aGhozMzM6AAA6ADo6AGY6kNs/GRk/GT8/GWI/P4E/gb1NTU1NTW5NTY5NbqtNjshiGRliGT9iGWJiYmJin9lmAABmtv9uTU1uTW5uTY5ubm5ubo5ubqtujshuq6tuq+SBPxmBPz+BYhmBgZ+Bn4GBvdmOTU2OTW6OTY6Obk2Ojo6OyMiOyP+QOgCQkDqQkGaQtpCQ2/+fYhmfYmKfgT+f2Z+f2dmrbk2rbm6rbo6rq+Sr5OSr5P+2ZgC22/+2//+9gT+92b292dnIjk3IjqvIq6vIyI7I5P/I///Zn2LZvYHZ2Z/Z2b3Z2dnbkDrb///kq27kq47k///r6+v/AAD/tmb/yI7/yMj/25D/27b/5Kv/5Mj//7b//8j//9v//+T///9YgM5XAAAACXBIWXMAAA7DAAAOwwHHb6hkAAAZX0lEQVR4nO2djX/k1HWGlbApWQihBcFuSgMLDY3TD3ZD67SFtvHSOIXiNjELBneXdbcTHOv//weqq88746Mzr2YkjTz7vD9g3tFoznnvzOOrOxpjJRlCM1ay6wAIeQJQNGsBKJq1ABTNWgCKZi0ARbPWxoC+NLImbTNNlz0ZzLSv2eaAno2qlyZtw2Bm1wZA4zYMZnZtADRuw2Bm1wZA4zYMZnZtADRuw2Bm1wZA4zYMZnZtADRuw2Bm1wZA4zYMZnZtRgH00Z/9+uzsy5/cfvHz5qbd3qVHr96+/dPmXv005z0doEuzc+eLXe0/8mAG6bJ+MF/cvv0ng70zI7epdx4D0C9Cvq9+8dOzz35Y36zXl3/+wdmjP/2gutc8rRvQAbpURc66X+xq/5EHM0iX9YMJ73hbf9vBjNumGc0QgD567W9i9j/+wd/lEb9869chanXTRK/3zX+uflCH+fj1fAhfhEF8XFdpnta+pyN0qYosvdjLbar9Rx7MIF3WD6aqN9Bgxm3TjGYQQF99/eyLFz/PZ/bbZc4Q6NFrn4cfiuqmzVfuG36uvqhn/i/f+re3ihHkO1ZFmqdF7+nwXc6Mo+K1NlH9EQezfRdtMPlkNtBgxm1zNuQhviAlXl2EO6F76PfiSr5y3+XFyGe3Xw83X/3i9XpL87ToPR2+i/merrYJ+48/mO27KIN59Go+aw00mHHbnI0OaNcPUJXvtc/jKMXS48uftPGsSWf4Lsp7Wuw/+mAG6KIMxp2oew5m3DZnIwC6PDl3LUGsH6CP/+KH4ccuPLUqYi3bhu/ivKf1HuX+Yw9miC7CYIondi51ew5m3DZjALrMfpiuiw9xr7cf4tp8YQnSxn7tP//6gzJereZpa2bQ7bo472n9cLn/yIMZpMv6wVRH24EGM26bs9EBXT4NVj7c5os/xJXr5X+NfvzOrFOHY3RZ+55+Vu0/7mCG6bL+EJ/3CRWGGczIbYYEVNG/OGdoPfX78mXTLj2/FWEw07WZCNCv/tbYGL46uH27PR3m5ZPabNyl34vNYCZsw3fxcRsGM7s2ABq3YTCzawOgcRsGM7s22wM6zf91Ok2babrsyWCmfc02BzT/90l959vWZmuttGvzngptevTuaLP5YKQYfQazxbiiwTQPbToYJ8bWr1kvAABU7QKgAGrkA1DdAmgsANVjAKhb0LQACqCiBVAvH4DqFkBjAageA0DdgqYFUAAVLYB6+QBUtwAaC0D1GADqFjQtgAKoaAHUywegugXQWACqxwBQt6BpARRARQugXj4A1S2AxgJQPQaAugVNC6AAKloA9fJNCGj9UgCoHwNAAbR3bwC9JgDVYwCoW9C0AAqgogVQLx+A6hZAYwGoHgNA3YKmBVAAFS2AevkAVLcAGgtA9RgA6hY0LYACqGgB1MsHoLoF0FgAqscAULegaQEUQEU7Y0Cvjg6L28W9NM3deZqmb55mk+YDUN0+f4CepwWglw+Os8W7x9nJYfQYgOoxANQtaFoF0MXPPiyQvLib/+fk8OrhcfQggOoxANQtaFoB0KuHvzlq5sx8Fr28n6bllFr8Bdwnkb59MrSa93SSNkWXZOwuUw5mvC4TtREAPT+4agC9OjoojvLtLMoMqsdgBnULmnY9oIv3HzeAXt4/qLY261AA1WMAqFvQtOsBDZ/Z07QAc3GvOdQDaKcF0A0LmrbPaaaKz4s7j7OrTzjN1GUBdMOCppUBXbx3Ws6lh2FOfaP5IA+gegwAdQualm+SAFS0AOrlA1DdAmgsANVjAKhb0LQACqCiBVAvH4DqFkBjAageA0DdgqYFUAAVLYB6+QBUtwAaC0D1GADqFjQtgAKoaAHUywegugXQWACqxwBQt6BpARRARQugXj4A1S2AxgJQPQaAugVNC6AAKloA9fJNCWjidgFQADXyAahuATQWgOoxANQtaFoABVDRAqiXD0B1C6CxAFSPAaBuQdMCKICKFkC9fACqWwCNBaB6DAB1C5oWQAFUtADq5QNQ3QJoLADVYwCoW9C0AGoAmnhdABRAjXwAqlsAjQWgegwAdQuaFkABVLQA6uUDUN0CaCwA1WMAqFvQtAAKoKK9yYAmVQUAVboAaI/e2wMaLgeW5P8ko15obMorzSXJuF240lz/LtvPoMk+zaCJ04UZ9IbNoBmAqjEA1C1oWgC9DmgGoEoMAAXQ3r0B9JoAVI8BoG5B0wIogIoWQL18AKpbAI21n4D2HgyA9m8DoL3bAGiPGAAKoL17A+g1AageA0DdgqYFUAAVLYB6+QBUtwAaax8B3WAwANq/DYD2bgOgPWIAKID27u0BmiQd+4v2xgOa7BOgfQcDoHWbzQuadiBAkwRA5S4A2qM3gFqAZnsIaP172BsUtDcCKID27u0Bmj3fgBZvKoAqXXYFaAagAKp02R2gyWYF7Y0ACqC9e3cDmtR/u2CDgvbGGwhoAqBKlx0CmmxU0N4IoDsENNs/QIMDUACdG6DVG1sCmgGo2zTZPB+A6tYFNHGf2ifGPgKa3ChAkyeJ8NQeMXYJaLlTebIeQO2mxcl8AJ0c0PBPC2iy6Qu174CGfZLo6wwALTUpoKuTBIDWtvouNPpC+AYA2jes2GWXgBbrrGK+6F177wEt+/T8lQUAHRrQrAK093J0DwDtzte+1629AYBm+wHo8tSRJDWg/Zaj+wxo9Fa3k2lvQJuMAKq06QI0S55UnwT6LUf3F9D4UJk1y9EbAegmvwA0f0DrNwRAy9LlMSXa2uPosjNAk/LcdvVO3mRAEwPQ1nUvs1enkT0CdOkQnhiAlq+M8hFkd4CW72k5i+4XoO0LmTRarZLED9kTyo0DNOsC1OofvzKzB3S7Q6E9mCkBzTo/HSTRXBETXK8Bsvr/ljBegpsLaCIAmrXzqJSvALSecicF1H53HDs7QLNuQCubLB/sYxrqfeOHZwfo1dFhcXt5P73zuLmJ8l0DNKKuE8BqsvWXoyuAljEnBLRep23xureHih0AWp+JWN8lqa9gllxnsRlGvDFqs+7YNjag52kBaOD0/G59k7X5rgGaRMs2H9Cs8wWxJp1q1+Zl2OC3T9w2LaBZBKg1fTh2eWO9itvRDKoDmj0xj/ZLMeq3amaALn72YQHo5S9Ps8V7p9VN1uZbuXrgEqDdh/AY0M4vvVfe0/IV/DYxtearc28aXANo+YsE4i+rxRvboV07HNT7jA1oogO6evAzYkSfHGYD6NXD35SH+MX7j7PLB8fVTXhyULheXVJfPbC4rXkplEgXvGt277oS3soF94z9bWgFRW3q6zpWXaziPYZybfd4MElSVe34aRtqMNW2Ia9ReL1NM87RBuMBen5QrUEv7hRkVjf1i53FM2g93RTl28I9Z5poh1191Xm9SzEm59x29MKG+8WtM5hmx1nNoH1ixDNorW9Xzyj2KegNxgE0nzCvOmbQOt8yoNWb1AvQNsF8Aa1Wox1VWjq713LLgPqDuWGAZu7H11EBPU+DDjJpDVpNMsWpjXYFpwHanpPrWLbtFtBKzZEhsbZWuwqHg30DtNRuTzNdHR2Un+IP7E/xEaBZf0CXvrxonjU7QJtxJc2UunImf/2LPd8PSX1izOZDUglomDPXnAddATTJmh+tvvnaNcIMAa1+gpaW81oMAHULmnbIb5Kypb+hVk8vm+WrP2XND9BmjV0kLM//ijF2cR40mwLQHoPZFaBNvug3ZbYBdDXfjABtrpXYe1wA6hY07XiAxifg9wvQrOuUg9gFQHv0Hh7QtvweA+pZAN2woGkHBzQqv+b3PQFUbAOgGYBGXQD0eQF0yHwAqlsAjQWgegwAdQuaFkABVLQA6uUDUN0CaCwA1WMAqFvQtAAKoKIFUC8fgOp2BVCxC4BulQ9AdQugsQBUjwGgbkHTAiiAivZGAzp6PgDVLYDGAlA9BoC6BU0LoAAqWgD18gGobgE0FoDqMQDULWhaAAVQ0QKolw9AdQugsQBUj7ETQNUuALpVPgDVLYDGAlA9BoC6BU0LoAAqWgD18gGobgE0FoDqMQDULWhaAAVQ0QKolw9AdQugsfYP0DVdABRAjXwAqlsAjQWgegwAdQuaFkABVLQA6uUDUN0CaKzOi7MNo5fiNrVGazNNlykHM947M/FrxgyqdmEGvWEzaAagagwAdQuaFkABVLQA6uUDUN0CaCwA1WMAqFvQtAAKoKIFUC8fgOoWQGMBqB4DQN2CpgVQABUtgHr5AFS3ABoLQPUYAOoWNC2AAqhoAdTLB6C6BdBYAKrHAFC3oGkBFEBFC6BePgDVLYDGAlA9BoC6BU0LoAAqWgD18gGobgE0FoDqMQDULWhaAAVQ0QKolw9AdQugsQBUjwGgbkHTAiiAihZAvXwAqlsAjQWgegwAdQuaFkABVLQA6uUDUN3uN6DfvZ3U+v6n2XoBqB4DQN2CpjVm0K8lMGsBqB4DQN2CprUO8b994ZtMFoDqMQDULWha1qAAKloA9fIBqG4BNBaA6jEA1C1oWhvQp+FD/DuZIgDVYwCoW9C0JqDF5/jv3v5xJghA9RgA6hY0rQXod28Xk+dTzoNuVBBANyxoWgAFUNHOB9ASzQrTdQJQPQaAugVNew3Q6191XqTpm6fBnKdBh8VtuSUD0D4xANQtaNr1p5kW751m53frexd3Hmcnh9HDL8VPBlClC4D26K2dBw2QFrp8cJxdPTyOHgJQPQaAugVNqwHazKDBXN4vDvThyUFP2uvt7cfVA0fvwqUQ+3dxAV3ce6OaM8MEmi3ejWdRZlA9BjOoW9C02gxagJmVK9BSzToUQPUYAOoWNK0GaM3jycHKBgDtEwNA3YKmXQ9omDWrGbQ8sIcNV5/Ep5kAFEA3aDPUDHqepvkaNHyQrzgtN2RtPgAF0A3aDAWoLwDVYwCoW9C0AAqgogVQLx+A6hZAYwGoHgNA3YKmBVAAFS2AevkAVLcAGgtA9RgA6hY0LYACqGgB1MsHoLoF0FgAqscAULegaQEUQEULoF4+ANUtgMYCUD0GgLoFTQugACpaAPXyAahuATQWgOoxANQtaFoABVDRAqiXD0B1C6CxAFSPAaBuQdMCKICKFkC9fACqWwCNBaB6DAB1C5oWQAFUtADq5QNQ3QJoLADVYwCoW9C0AAqgogVQLx+A6hZAYwGoHgNA3YKmBVAAFS2AevkAVLcAGgtA9RgA6hY0LYACqGgB1MsHoLoF0FgAqscAULegaQEUQEULoF4+ANUtgMbiSnO9u3Cluf5dmEHlLsygN2wGzQBUjQGgbkHTAiiAihZAvXwAqlsAjQWgegwAdQuaFkABVLQA6uUDUN0CaCwA1WMAqFvQtAAKoKIFUC8fgOoWQGMBqB4DQN2CpgVQABUtgHr5AFS3ABoLQPUYAOoWNC2AAqhoAdTLB6C6BdBYAKrHAFC3oGkBFEBFC6BePgDVLYDGAlA9BoC6BU0LoAAqWgD18gGobgE0FoDqMQDULWhaAAVQ0QKolw9AdQugsQBUjwGgbkHTAiiAihZAvXwAqlsAjQWgegwAdQuaFkABVLQA6uUDUN0CaCwA1WMAqFvQtAAKoKIFUC8fgOoWQGMBqB4DQN2CpgVQABUtgHr5AFS3ABoLQPUYAOoWNK0A6EWavnlauPO0sJf30zuP60cBVI8BoG5B064HdPHeaXZ+t7Anh+G/V0eH9YYMQPvEAFC3oGm1Q3yANCfz4XG4c/nL02pDnQ9AAXSDNgMCWk6Y+aE9TQ+zxfuPs8sHgdWXgp5wpbmeXbjSXP8uLqCLe28UU+fi3eMwi17cqQHNMmbQPjGYQd2CptVm0JbHfB3azqB1PgAF0A3aDAho9fGodKxBfQugGxY07XpA2yN6cFefnF4dHfAp3rEAumFB0woz6Hma5mvQ4mxT4TgP6lsA3bCgafkmCUBFC6BePgDVLYDGAlA9BoC6BU0LoAAqWgD18gGobgE0FoDqMQDULWhaAAVQ0QKolw9AdQugsQBUjwGgbkHTAiiAihZAvXwAqlsAjQWgegwAdQuaFkABVLQA6uUDUN0CaCwA1WMAqFvQtAAKoKIFUC8fgOoWQGMBqB4DQN2CpgVQABUtgHr5AFS3ABoLQPUYAOoWNC2AAqhoAdTLB6C6BdBYAKrHAFC3oGkBFEBFC6BePgDVLYDGAlA9BoC6BU0LoAAqWgD18gGobgE0FoDqMQDULWhaAAVQ0QKolw9AdQugsQBUjwGgbkHTAiiAihZAvXwAqlsAjQWgegwAdQuadhBAJ8gHoLoF0Fj7d/XA0btwKcT+XZhB5S7MoDdsBp0mH4DqFkBjAageA0DdgqYFUAAVLYB6+QBUtwAaC0D1GADqFjQtgAKoaAHUywegugXQWACqxwBQt6BpARRARQugXj4A1S2AxgJQPQaAugVNC6AAKloA9fIBqG4BNBaA6jEA1C1oWgAFUNECqJcPQHULoLEAVI8BoG5B0wIogIoWQL18AKpbAI0FoHoMAHULmhZAAVS0AOrlA1DdAmgsANVjAKhb0LQACqCiBVAvH4DqFkBjAageA0DdgqYFUAAVLYB6+QBUtwAaC0D1GADqFjQtgAKoaAHUywegugXQWACqxwBQt6BpARRARQugXj4A1S2AxgJQPQaAugVNC6AAKloA9fIBqG6fN0Av0vTN08It7qXpYZadp80WAO0TA0DdgqZdD+jivdPs/G5wlw+Os8W7x9nJYfQwgOoxdgBo/dAeAxoUIM2n0oDpyeHVw+PoIQDVYwCoW9C0GqDlDBqUz6KX99PiSJ8/OWiaC41xpbnebUbuMqMrzS3uvVHPmVdHB8VRvp1FmUH1GMygbkHTajNoWH0Wt/cPqi3NOhRA9RgA6hY0rXiaqeRxce9wecN0+QBUt88ZoBd3HlczaMVn2HD1CaeZuiyAbljQtMIMep6m+Ro0/yAfzn+Gj0flhmzSfACq2+cNUF8AqscAULegaQEUQEULoF4+ANUtgMYCUD0GgLoFTQugACpaAPXyAahuATQWgOoxANQtaFoABVDRAqiXD0B1C6CxAFSPAaBuQdNuD+jImrTNNF32ZDDTvmYbA1pk3HartuvgBc2tezWY4QvqXYYdIoAO8NQ+uwJov123AhShsQWgaNYCUDRrASiatQAUzVoAimateQO6uNf8Laib34bBbNJm1oBevHl6kd5dv9+NaMNgNmozZ0CLP2NyeX/s12GaNgxmszZzBrT8KxHtXzW52W0YzEZtRgPUXKTYK5fO9cxFsT38TaheXSZqs1eD6TPEobu4bcYC1Fyk2CsXe2sR+uTO4yxb/rukGxccus1eDabPEKcdzEiAmosUe+Vib61Cn+Qhr466XoY+BYdus1eD6TPEiQczEqB/+NBapJgrF3PXJvRJmnZ/WrS7TNRmrwZjtpnFYMYBdHEvvbZIyafs3xkrF2vXTFuFm0+dps1eDaajzTwGMwqg4c/hrS5Siik7vbZysXbtGorQZaI2ezWYjjYzGcwYgIaeV0fpG/EipZqy05WVi7Vr11CELhO12avBdLSZy2BGmUHP7+Zz8yJdWqRUU3a6snIxdu0YitRlojZ7NZiONjMZzCiAXh39/UFo0Y7hD783zpwt/sratXMo67tM1GavBmO2mdFgtgDUPL2aT80H9d9kPj9od73z2FponF7fNVs5C9yjy0RttuhittnpYMw2cxrM5oDap3bvPG7/oH2Tpdx0srrI+YcHzU9Ts+v/hE3RUHp0majNFl3MNjsdjNlmVoPZGNDuU7vFxZUu7/+8eaxaCB8snTnLN1Zh412zk+KPjDdD6dFlojZbdDHb7HQwZptZDWaLGdQ6H1ZcdKG4MN3//q79c/bVQvhe8WNR7xkWHeV1wpZ3/csyYD2UHl0marNFF6vNbgdjtJnZYLY6xGfXzoeFjhfX1s/WQjiovNLikk4OL+KR9ekyUZstuphtdjqYrjbzGcwWH5K6fl8gD7n6RYOxEA4K169b2fJfp9lywB5dJmqzRZeuNrsbTEeb+Qxmm9NMHb8vcH7Q8UXY9VfM/j5i5dXu2WWiNpt16Wiz68FcbzObwWx1HtT+fYHznxv5lhbCUYV4WdIGTJfOiuldJmqzRRe7zS4H09FmLoMZ4UT9RWrkW140N7r6798P2WWiNns1mI42cxnMCIBe/vvwNXfVhcHsusus/58khAAUzVoAimYtAEWzFoCiWQtA0awFoGjWAlA0awHoBPq//8ie/eij+gb1EYCOr4pK4NxEADq+AHQLAeggevbKPybf//SPv0ry/+Yk/lOSvPBNlpX3n72cJD9+9qN/Lm8+KrbeCryGLe/kJr8Jt8gSgA6iZy/fCjzm//n6hW+evRxYvdXez6nM/61u6keevZwz/HXOb5hYn70MobYAdBAVgD3NZ8/su7ffKe7k3DX3lwAttj4NE2u517NXPt11+jkLQAdRMQ1+nRQqjuMBzPh+BGg4+Fd3i+f9tjjiI1sAOohKQAN69Z0AaHTfATTsG5auyBKADqICtKffKz+mlwfvVz5t7i8DGrY+rdee1Sf7HOedZZ+3AHQQFaD98Vf55Jjz135IKu8H+vIdqpvmQ1IFaLEm5RRUlwB0EJWAhRNI3/uoPM10q72frzJvlYvNW0unmaoZ9GlS7oUsAejwYjocUAA6vAB0QAHo8ALQAQWgaNYCUDRrASiatQAUzVoAimYtAEWzFoCiWev/Ab+0X3ic41yzAAAAAElFTkSuQmCC" /><!-- --></p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" tabindex="-1"></a></span>
+<span id="cb18-2"><a href="#cb18-2" tabindex="-1"></a>sum_mc_plot_subset1 <span class="ot">&lt;-</span> </span>
+<span id="cb18-3"><a href="#cb18-3" tabindex="-1"></a>  <span class="fu">plot</span>(summary_default, </span>
+<span id="cb18-4"><a href="#cb18-4" tabindex="-1"></a>       <span class="at">plot =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb18-5"><a href="#cb18-5" tabindex="-1"></a>       <span class="at">which_setup =</span> first_mc_ols<span class="sc">$</span>nice_names[<span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>])</span>
+<span id="cb18-6"><a href="#cb18-6" tabindex="-1"></a></span>
+<span id="cb18-7"><a href="#cb18-7" tabindex="-1"></a>sum_mc_plot_subset2 <span class="ot">&lt;-</span> </span>
+<span id="cb18-8"><a href="#cb18-8" tabindex="-1"></a>  <span class="fu">plot</span>(summary_default, </span>
+<span id="cb18-9"><a href="#cb18-9" tabindex="-1"></a>       <span class="at">plot =</span> <span class="cn">FALSE</span>, </span>
+<span id="cb18-10"><a href="#cb18-10" tabindex="-1"></a>       <span class="at">parameter_comb =</span> <span class="fu">list</span>(<span class="at">inc_x2 =</span> <span class="dv">1</span>))</span>
+<span id="cb18-11"><a href="#cb18-11" tabindex="-1"></a></span>
+<span id="cb18-12"><a href="#cb18-12" tabindex="-1"></a>sum_mc_plot_subset2<span class="sc">$</span>b1</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" tabindex="-1"></a></span>
+<span id="cb19-2"><a href="#cb19-2" tabindex="-1"></a>sum_mc_plot_joint <span class="ot">&lt;-</span> </span>
+<span id="cb19-3"><a href="#cb19-3" tabindex="-1"></a>  <span class="fu">plot</span>(summary_default, <span class="at">plot =</span> <span class="cn">FALSE</span>, <span class="at">join =</span> first_mc_ols<span class="sc">$</span>nice_names[<span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>])</span>
+<span id="cb19-4"><a href="#cb19-4" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" tabindex="-1"></a>sum_mc_plot_joint<span class="sc">$</span>b1</span></code></pre></div>
+<p><img src="data:image/png;base64,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" /><!-- --></p>
+</div>
+<div id="create-a-latex-table-of-your-results-with-tidy_mc_latex" class="section level3">
+<h3>Create a ‘LaTeX’ table of your results with
+<code>tidy_mc_latex()</code></h3>
+<p>Using <code>tidy_mc_latex</code> the user can present the results
+from <code>future_mc</code> directly into a <code>LaTeX</code> document
+using all the benefits from the <code>kableExtra</code> package. The
+first and main argument <code>x</code> needed by
+<code>tidy_mc_latex</code> is a <code>summary.mc</code> object obtained
+from <code>summary.mc()</code>. To present the results in a
+comprehensive manner the function requires that all summarized outputs
+in <code>summary.mc</code> be scalar numeric results for all parameter
+combinations. In case, the summarizing function returns more than one
+argument then this will be presented in the table as an <code>NA</code>
+value. The second argument of the function is
+<code>repetitions_set</code> which allows the user to see the certain
+values of the “path” of the summarized results of <code>fun</code>. To
+illustrate this we use the MC results for the OLS example:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" tabindex="-1"></a><span class="fu">tidy_mc_latex</span>(</span>
+<span id="cb20-2"><a href="#cb20-2" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">summary</span>(first_mc_ols),</span>
+<span id="cb20-3"><a href="#cb20-3" tabindex="-1"></a>  <span class="at">repetitions_set =</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">1000</span>)</span>
+<span id="cb20-4"><a href="#cb20-4" tabindex="-1"></a>) <span class="sc">%&gt;%</span> </span>
+<span id="cb20-5"><a href="#cb20-5" tabindex="-1"></a>  <span class="fu">print</span>()</span>
+<span id="cb20-6"><a href="#cb20-6" tabindex="-1"></a><span class="co">#&gt; \begin{table}</span></span>
+<span id="cb20-7"><a href="#cb20-7" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb20-8"><a href="#cb20-8" tabindex="-1"></a><span class="co">#&gt; \caption{\label{tab:unnamed-chunk-19}Monte Carlo simulations results}</span></span>
+<span id="cb20-9"><a href="#cb20-9" tabindex="-1"></a><span class="co">#&gt; \centering</span></span>
+<span id="cb20-10"><a href="#cb20-10" tabindex="-1"></a><span class="co">#&gt; \begin{tabular}[t]{cccccc}</span></span>
+<span id="cb20-11"><a href="#cb20-11" tabindex="-1"></a><span class="co">#&gt; \toprule</span></span>
+<span id="cb20-12"><a href="#cb20-12" tabindex="-1"></a><span class="co">#&gt; n &amp; inc_x2 &amp; b0 &amp; b1 &amp; b2 &amp; sigma2\\</span></span>
+<span id="cb20-13"><a href="#cb20-13" tabindex="-1"></a><span class="co">#&gt; \midrule</span></span>
+<span id="cb20-14"><a href="#cb20-14" tabindex="-1"></a><span class="co">#&gt; \addlinespace[0.3em]</span></span>
+<span id="cb20-15"><a href="#cb20-15" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{\textbf{N = 10}}\\</span></span>
+<span id="cb20-16"><a href="#cb20-16" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 0 &amp; 1.354 &amp; 4.043 &amp; NA &amp; 906.484\\</span></span>
+<span id="cb20-17"><a href="#cb20-17" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 1 &amp; 0.989 &amp; 4.011 &amp; 4.999 &amp; 1.915\\</span></span>
+<span id="cb20-18"><a href="#cb20-18" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}200 &amp; 0 &amp; 2.326 &amp; 4.156 &amp; NA &amp; 871.074\\</span></span>
+<span id="cb20-19"><a href="#cb20-19" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}200 &amp; 1 &amp; 1.025 &amp; 3.996 &amp; 5.002 &amp; 2.015\\</span></span>
+<span id="cb20-20"><a href="#cb20-20" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}300 &amp; 0 &amp; 0.083 &amp; 4.006 &amp; NA &amp; 950.222\\</span></span>
+<span id="cb20-21"><a href="#cb20-21" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}300 &amp; 1 &amp; 0.989 &amp; 3.997 &amp; 4.997 &amp; 2.058\\</span></span>
+<span id="cb20-22"><a href="#cb20-22" tabindex="-1"></a><span class="co">#&gt; \addlinespace[0.3em]</span></span>
+<span id="cb20-23"><a href="#cb20-23" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{\textbf{N = 1000}}\\</span></span>
+<span id="cb20-24"><a href="#cb20-24" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 0 &amp; 0.919 &amp; 3.985 &amp; NA &amp; 892.756\\</span></span>
+<span id="cb20-25"><a href="#cb20-25" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 1 &amp; 1.003 &amp; 4.000 &amp; 5.002 &amp; 1.959\\</span></span>
+<span id="cb20-26"><a href="#cb20-26" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}200 &amp; 0 &amp; 1.024 &amp; 4.006 &amp; NA &amp; 895.652\\</span></span>
+<span id="cb20-27"><a href="#cb20-27" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}200 &amp; 1 &amp; 1.002 &amp; 4.000 &amp; 5.001 &amp; 1.983\\</span></span>
+<span id="cb20-28"><a href="#cb20-28" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}300 &amp; 0 &amp; 1.000 &amp; 4.001 &amp; NA &amp; 900.689\\</span></span>
+<span id="cb20-29"><a href="#cb20-29" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}300 &amp; 1 &amp; 1.002 &amp; 4.000 &amp; 5.000 &amp; 1.984\\</span></span>
+<span id="cb20-30"><a href="#cb20-30" tabindex="-1"></a><span class="co">#&gt; \bottomrule</span></span>
+<span id="cb20-31"><a href="#cb20-31" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{\textsuperscript{} Total repetitions = 1000, total parameter}\\</span></span>
+<span id="cb20-32"><a href="#cb20-32" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{combinations = 6}\\</span></span>
+<span id="cb20-33"><a href="#cb20-33" tabindex="-1"></a><span class="co">#&gt; \end{tabular}</span></span>
+<span id="cb20-34"><a href="#cb20-34" tabindex="-1"></a><span class="co">#&gt; \end{table}</span></span></code></pre></div>
+<p>The resulting table is composed of two panels, which corresponds to
+the length of <code>repetitions_set</code>. In them the columns
+correspond to the results of the summarizing functions for
+<code>b0</code>, <code>b1</code>, <code>b2</code>, and
+<code>sigma2</code>, and the rows correspond to specific combinations of
+the parameters provided in <code>parameter_list</code>. The footnote in
+the table shows the number of repetitions and the total parameter
+combinations provided to <code>future_mc</code>.</p>
+<p>Moreover, the next three arguments in <code>tidy_mc_latex</code> are
+comfort options to select which results of <code>summary.mc</code>
+depending on the parameter combinations will be presented in the table.
+On one hand, The argument <code>which_setup</code> allows the user to
+make use of the <code>nice_names</code> of the parameter combinations in
+the returned object by <code>future_mc()</code> to subset the rows in
+the table. On the other hand, the argument <code>parameter_comb</code>
+is used to directly filter the parameters by their values. This argument
+requires a named list, containing vector or scalar values of all
+parameters to be filtered from. The user must only provide one of this
+arguments at a time. We show how to make use of both parameters to
+subset the rows of table for <span class="math inline">\(n =
+100\)</span> and <span class="math inline">\(inc_{x2}=1\)</span>:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" tabindex="-1"></a><span class="fu">tidy_mc_latex</span>(</span>
+<span id="cb21-2"><a href="#cb21-2" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">summary</span>(first_mc_ols),</span>
+<span id="cb21-3"><a href="#cb21-3" tabindex="-1"></a>  <span class="at">repetitions_set =</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">1000</span>),</span>
+<span id="cb21-4"><a href="#cb21-4" tabindex="-1"></a>  <span class="at">which_setup =</span> first_mc_ols<span class="sc">$</span>nice_names[<span class="dv">1</span>]) <span class="sc">%&gt;%</span> </span>
+<span id="cb21-5"><a href="#cb21-5" tabindex="-1"></a>  <span class="fu">print</span>()</span>
+<span id="cb21-6"><a href="#cb21-6" tabindex="-1"></a><span class="co">#&gt; \begin{table}</span></span>
+<span id="cb21-7"><a href="#cb21-7" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb21-8"><a href="#cb21-8" tabindex="-1"></a><span class="co">#&gt; \caption{\label{tab:unnamed-chunk-20}Monte Carlo simulations results}</span></span>
+<span id="cb21-9"><a href="#cb21-9" tabindex="-1"></a><span class="co">#&gt; \centering</span></span>
+<span id="cb21-10"><a href="#cb21-10" tabindex="-1"></a><span class="co">#&gt; \begin{tabular}[t]{ccccc}</span></span>
+<span id="cb21-11"><a href="#cb21-11" tabindex="-1"></a><span class="co">#&gt; \toprule</span></span>
+<span id="cb21-12"><a href="#cb21-12" tabindex="-1"></a><span class="co">#&gt; n &amp; inc_x2 &amp; b0 &amp; b1 &amp; sigma2\\</span></span>
+<span id="cb21-13"><a href="#cb21-13" tabindex="-1"></a><span class="co">#&gt; \midrule</span></span>
+<span id="cb21-14"><a href="#cb21-14" tabindex="-1"></a><span class="co">#&gt; \addlinespace[0.3em]</span></span>
+<span id="cb21-15"><a href="#cb21-15" tabindex="-1"></a><span class="co">#&gt; \multicolumn{5}{l}{\textbf{N = 10}}\\</span></span>
+<span id="cb21-16"><a href="#cb21-16" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 0 &amp; 1.354 &amp; 4.043 &amp; 906.484\\</span></span>
+<span id="cb21-17"><a href="#cb21-17" tabindex="-1"></a><span class="co">#&gt; \addlinespace[0.3em]</span></span>
+<span id="cb21-18"><a href="#cb21-18" tabindex="-1"></a><span class="co">#&gt; \multicolumn{5}{l}{\textbf{N = 1000}}\\</span></span>
+<span id="cb21-19"><a href="#cb21-19" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 0 &amp; 0.919 &amp; 3.985 &amp; 892.756\\</span></span>
+<span id="cb21-20"><a href="#cb21-20" tabindex="-1"></a><span class="co">#&gt; \bottomrule</span></span>
+<span id="cb21-21"><a href="#cb21-21" tabindex="-1"></a><span class="co">#&gt; \multicolumn{5}{l}{\textsuperscript{} Total repetitions = 1000, total}\\</span></span>
+<span id="cb21-22"><a href="#cb21-22" tabindex="-1"></a><span class="co">#&gt; \multicolumn{5}{l}{parameter combinations = 6}\\</span></span>
+<span id="cb21-23"><a href="#cb21-23" tabindex="-1"></a><span class="co">#&gt; \end{tabular}</span></span>
+<span id="cb21-24"><a href="#cb21-24" tabindex="-1"></a><span class="co">#&gt; \end{table}</span></span>
+<span id="cb21-25"><a href="#cb21-25" tabindex="-1"></a></span>
+<span id="cb21-26"><a href="#cb21-26" tabindex="-1"></a><span class="fu">tidy_mc_latex</span>(</span>
+<span id="cb21-27"><a href="#cb21-27" tabindex="-1"></a>  <span class="at">x =</span> <span class="fu">summary</span>(first_mc_ols),</span>
+<span id="cb21-28"><a href="#cb21-28" tabindex="-1"></a>  <span class="at">repetitions_set =</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">1000</span>),</span>
+<span id="cb21-29"><a href="#cb21-29" tabindex="-1"></a>  <span class="at">parameter_comb =</span> <span class="fu">list</span>(<span class="at">n =</span> <span class="dv">100</span>, <span class="at">inc_x2 =</span> <span class="dv">1</span>)) <span class="sc">%&gt;%</span> </span>
+<span id="cb21-30"><a href="#cb21-30" tabindex="-1"></a>  <span class="fu">print</span>()</span>
+<span id="cb21-31"><a href="#cb21-31" tabindex="-1"></a><span class="co">#&gt; \begin{table}</span></span>
+<span id="cb21-32"><a href="#cb21-32" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb21-33"><a href="#cb21-33" tabindex="-1"></a><span class="co">#&gt; \caption{\label{tab:unnamed-chunk-20}Monte Carlo simulations results}</span></span>
+<span id="cb21-34"><a href="#cb21-34" tabindex="-1"></a><span class="co">#&gt; \centering</span></span>
+<span id="cb21-35"><a href="#cb21-35" tabindex="-1"></a><span class="co">#&gt; \begin{tabular}[t]{cccccc}</span></span>
+<span id="cb21-36"><a href="#cb21-36" tabindex="-1"></a><span class="co">#&gt; \toprule</span></span>
+<span id="cb21-37"><a href="#cb21-37" tabindex="-1"></a><span class="co">#&gt; n &amp; inc_x2 &amp; b0 &amp; b1 &amp; b2 &amp; sigma2\\</span></span>
+<span id="cb21-38"><a href="#cb21-38" tabindex="-1"></a><span class="co">#&gt; \midrule</span></span>
+<span id="cb21-39"><a href="#cb21-39" tabindex="-1"></a><span class="co">#&gt; \addlinespace[0.3em]</span></span>
+<span id="cb21-40"><a href="#cb21-40" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{\textbf{N = 10}}\\</span></span>
+<span id="cb21-41"><a href="#cb21-41" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 1 &amp; 0.989 &amp; 4.011 &amp; 4.999 &amp; 1.915\\</span></span>
+<span id="cb21-42"><a href="#cb21-42" tabindex="-1"></a><span class="co">#&gt; \addlinespace[0.3em]</span></span>
+<span id="cb21-43"><a href="#cb21-43" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{\textbf{N = 1000}}\\</span></span>
+<span id="cb21-44"><a href="#cb21-44" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 1 &amp; 1.003 &amp; 4.000 &amp; 5.002 &amp; 1.959\\</span></span>
+<span id="cb21-45"><a href="#cb21-45" tabindex="-1"></a><span class="co">#&gt; \bottomrule</span></span>
+<span id="cb21-46"><a href="#cb21-46" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{\textsuperscript{} Total repetitions = 1000, total parameter}\\</span></span>
+<span id="cb21-47"><a href="#cb21-47" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{combinations = 6}\\</span></span>
+<span id="cb21-48"><a href="#cb21-48" tabindex="-1"></a><span class="co">#&gt; \end{tabular}</span></span>
+<span id="cb21-49"><a href="#cb21-49" tabindex="-1"></a><span class="co">#&gt; \end{table}</span></span></code></pre></div>
+<p>The user can also subset the outputs of the original function
+(columns in the table) using the parameter <code>which_out</code>. This
+is done using a character vector with the names of the outputs, e.g. to
+only show the columns for <code>b0</code> and <code>sigma2</code> the
+user needs to set <code>which_out = c(&quot;b0&quot;, &quot;sigma2&quot;)</code>.</p>
+<p>Lastly, by providing a named list to the argument
+<code>kable_options</code>, the user can change all arguments of the
+underlying function <code>kable::kbl()</code>. The names of the list
+have to be equal to the names of the arguments of the function and the
+contents of every element also has to fulfill its requirements. We
+provide an example of how this list should be constructed, but for
+optimal usage we strongly recommend the user to see the documentation of
+the <code>kable::kbl()</code> function.</p>
+<p>To allow for further customization the returned object by
+<code>tidy_mc_latex</code> is of class <code>knitr_kable</code>,
+therefore the user can utilize most functions from the
+<code>kableExtra</code> package in the standard tidyverse manner. For
+example:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" tabindex="-1"></a><span class="fu">tidy_mc_latex</span>(<span class="fu">summary</span>(first_mc_ols), </span>
+<span id="cb22-2"><a href="#cb22-2" tabindex="-1"></a>              <span class="at">repetitions_set =</span> <span class="fu">c</span>(<span class="dv">10</span>, <span class="dv">1000</span>),</span>
+<span id="cb22-3"><a href="#cb22-3" tabindex="-1"></a>              <span class="at">kable_options =</span> <span class="fu">list</span>(</span>
+<span id="cb22-4"><a href="#cb22-4" tabindex="-1"></a>                <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">&quot;Number of observations&quot;</span>,</span>
+<span id="cb22-5"><a href="#cb22-5" tabindex="-1"></a>                              <span class="st">&quot;$x_2$ included or not&quot;</span>,</span>
+<span id="cb22-6"><a href="#cb22-6" tabindex="-1"></a>                              <span class="st">&quot;$</span><span class="sc">\\</span><span class="st">beta_0$&quot;</span>, <span class="st">&quot;$</span><span class="sc">\\</span><span class="st">beta_1$&quot;</span>,</span>
+<span id="cb22-7"><a href="#cb22-7" tabindex="-1"></a>                              <span class="st">&quot;$</span><span class="sc">\\</span><span class="st">beta_2$&quot;</span>, <span class="st">&quot;$s^2$&quot;</span>), </span>
+<span id="cb22-8"><a href="#cb22-8" tabindex="-1"></a>                <span class="at">caption =</span> <span class="st">&quot;Ommited variable bias MC results&quot;</span></span>
+<span id="cb22-9"><a href="#cb22-9" tabindex="-1"></a>              )</span>
+<span id="cb22-10"><a href="#cb22-10" tabindex="-1"></a>) <span class="sc">%&gt;%</span></span>
+<span id="cb22-11"><a href="#cb22-11" tabindex="-1"></a>  kableExtra<span class="sc">::</span><span class="fu">kable_styling</span>(<span class="at">latex_options =</span> <span class="st">&quot;HOLD_position&quot;</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb22-12"><a href="#cb22-12" tabindex="-1"></a>  <span class="fu">print</span>()</span>
+<span id="cb22-13"><a href="#cb22-13" tabindex="-1"></a><span class="co">#&gt; \begin{table}[H]</span></span>
+<span id="cb22-14"><a href="#cb22-14" tabindex="-1"></a><span class="co">#&gt; </span></span>
+<span id="cb22-15"><a href="#cb22-15" tabindex="-1"></a><span class="co">#&gt; \caption{\label{tab:unnamed-chunk-21}Ommited variable bias MC results}</span></span>
+<span id="cb22-16"><a href="#cb22-16" tabindex="-1"></a><span class="co">#&gt; \centering</span></span>
+<span id="cb22-17"><a href="#cb22-17" tabindex="-1"></a><span class="co">#&gt; \begin{tabular}[t]{cccccc}</span></span>
+<span id="cb22-18"><a href="#cb22-18" tabindex="-1"></a><span class="co">#&gt; \toprule</span></span>
+<span id="cb22-19"><a href="#cb22-19" tabindex="-1"></a><span class="co">#&gt; Number of observations &amp; $x_2$ included or not &amp; $\beta_0$ &amp; $\beta_1$ &amp; $\beta_2$ &amp; $s^2$\\</span></span>
+<span id="cb22-20"><a href="#cb22-20" tabindex="-1"></a><span class="co">#&gt; \midrule</span></span>
+<span id="cb22-21"><a href="#cb22-21" tabindex="-1"></a><span class="co">#&gt; \addlinespace[0.3em]</span></span>
+<span id="cb22-22"><a href="#cb22-22" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{\textbf{N = 10}}\\</span></span>
+<span id="cb22-23"><a href="#cb22-23" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 0 &amp; 1.354 &amp; 4.043 &amp; NA &amp; 906.484\\</span></span>
+<span id="cb22-24"><a href="#cb22-24" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 1 &amp; 0.989 &amp; 4.011 &amp; 4.999 &amp; 1.915\\</span></span>
+<span id="cb22-25"><a href="#cb22-25" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}200 &amp; 0 &amp; 2.326 &amp; 4.156 &amp; NA &amp; 871.074\\</span></span>
+<span id="cb22-26"><a href="#cb22-26" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}200 &amp; 1 &amp; 1.025 &amp; 3.996 &amp; 5.002 &amp; 2.015\\</span></span>
+<span id="cb22-27"><a href="#cb22-27" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}300 &amp; 0 &amp; 0.083 &amp; 4.006 &amp; NA &amp; 950.222\\</span></span>
+<span id="cb22-28"><a href="#cb22-28" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}300 &amp; 1 &amp; 0.989 &amp; 3.997 &amp; 4.997 &amp; 2.058\\</span></span>
+<span id="cb22-29"><a href="#cb22-29" tabindex="-1"></a><span class="co">#&gt; \addlinespace[0.3em]</span></span>
+<span id="cb22-30"><a href="#cb22-30" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{\textbf{N = 1000}}\\</span></span>
+<span id="cb22-31"><a href="#cb22-31" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 0 &amp; 0.919 &amp; 3.985 &amp; NA &amp; 892.756\\</span></span>
+<span id="cb22-32"><a href="#cb22-32" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}100 &amp; 1 &amp; 1.003 &amp; 4.000 &amp; 5.002 &amp; 1.959\\</span></span>
+<span id="cb22-33"><a href="#cb22-33" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}200 &amp; 0 &amp; 1.024 &amp; 4.006 &amp; NA &amp; 895.652\\</span></span>
+<span id="cb22-34"><a href="#cb22-34" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}200 &amp; 1 &amp; 1.002 &amp; 4.000 &amp; 5.001 &amp; 1.983\\</span></span>
+<span id="cb22-35"><a href="#cb22-35" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}300 &amp; 0 &amp; 1.000 &amp; 4.001 &amp; NA &amp; 900.689\\</span></span>
+<span id="cb22-36"><a href="#cb22-36" tabindex="-1"></a><span class="co">#&gt; \hspace{1em}300 &amp; 1 &amp; 1.002 &amp; 4.000 &amp; 5.000 &amp; 1.984\\</span></span>
+<span id="cb22-37"><a href="#cb22-37" tabindex="-1"></a><span class="co">#&gt; \bottomrule</span></span>
+<span id="cb22-38"><a href="#cb22-38" tabindex="-1"></a><span class="co">#&gt; \multicolumn{6}{l}{\textsuperscript{} Total repetitions = 1000, total parameter combinations = 6}\\</span></span>
+<span id="cb22-39"><a href="#cb22-39" tabindex="-1"></a><span class="co">#&gt; \end{tabular}</span></span>
+<span id="cb22-40"><a href="#cb22-40" tabindex="-1"></a><span class="co">#&gt; \end{table}</span></span></code></pre></div>
+</div>
+</div>
+</div>
+
+
+
+<!-- code folding -->
+
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
